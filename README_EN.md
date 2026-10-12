@@ -124,6 +124,8 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. Add `--offlin
 
 ## Version
 
+**1.0.8** - Additional ColorOS 17 fixes ported from community PR #3 by @zopulus: `Build` final fields are written through `jdk.internal.misc.Unsafe` (Android 17 rejects plain reflective writes and the static-field natives left `sun.misc.Unsafe`); the Google app identity spoof covers every process of that package; `ContextualSearchManagerService.isContextualSearchAvailable` answers true for trusted callers; the gesture handle bootstraps its press range when the bar was hidden at boot; an empty `voice_interaction_service` is repaired from the assistant's declared service.
+
 **1.0.7** - New option to make a power-key double press open the system quick-access wallet screen instead of the ColorOS wallet (off by default).
 
 **1.0.6** - ColorOS 17 (`V17.0.0.103` / API 37) support: `AssistManager`, the launcher corner-gesture rule and the Circle to Search interface now resolve against the new signatures; "Unblock page-level gestures" is ColorOS 16 only and is greyed out on 17, where the system no longer applies that block.

@@ -124,6 +124,8 @@
 
 ## 版本
 
+**1.0.8** — 吸收社区 PR #3（@zopulus）的补充修复：Android 17 上 `Build` final 字段改用 `jdk.internal.misc.Unsafe` 写入（普通反射被拒，且静态字段接口已从 `sun.misc.Unsafe` 移除）；Google 应用身份伪装覆盖该包全部进程；`ContextualSearchManagerService.isContextualSearchAvailable` 对可信调用方放行；隐藏手势条启动时补写按压范围；`voice_interaction_service` 为空时按声明补全。
+
 **1.0.7** — 新增「双击电源键改用 Google 钱包」：接管 `OplusWalletController.startWallet`，改为打开系统快捷钱包界面（默认关）。
 
 **1.0.6** — ColorOS 17（`V17.0.0.103` / API 37）适配：`AssistManager`、桌面底角手势规则与一圈即搜接口按新签名解析；「解除页面级手势限制」仅在 ColorOS 16 有效，17 上灰显（系统不再提供页面级屏蔽位）。

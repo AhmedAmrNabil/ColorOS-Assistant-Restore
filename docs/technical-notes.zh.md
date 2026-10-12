@@ -468,7 +468,19 @@ CN 固件的 SystemUI 里 CTS 那套是空实现（`OplusCircleToSearchManagerEx
 
 真机确认（2026-10-12）：开启该选项后双击电源键弹出 Google 钱包刷卡界面，锁屏（息屏）状态下同样弹出；LSPosed 日志为多条 `double_press_wallet target=quick_access_wallet launched=true`，无 `double_press_wallet_failed`。
 
-## 11. English summary
+## 11. 1.0.8：吸收 PR #3 的补充修复（2026-10-12）
+
+社区 PR #3（@zopulus，测试机 PLK110_17.0.0.100）与 1.0.7 修的是同一批故障；冲突解决后按本模块风格移植了以下五点，其余与 1.0.7 重复：
+
+1. `Build` 的 final 字段：Android 17 上 `Field.set` 直接抛 `IllegalAccessException`；作者用 `sun.misc.Unsafe.staticFieldBase` 兜底，但实测 17 上这两个静态字段接口已从 `sun.misc.Unsafe` 移除（native 实现搬到了 `jdk.internal.misc.Unsafe`，`sun.misc.Unsafe` 只剩包装），因此改为经 `sun.misc.Unsafe.theInternalUnsafe` 反射取得 `jdk.internal.misc.Unsafe` 实例，再用 `staticFieldBase/staticFieldOffset/putObjectVolatile` 写静态槽位。真机日志：`google_app_identity_spoofed model=SM-S928B manufacturer=samsung`（GSA `:interactor` 等进程）。
+2. 身份伪装覆盖 Google 应用整包（按 `package:process` 前缀匹配），不再只认主进程——本机 GSA 实际常驻的是 `:googleapp`/`:search`/`:interactor`，主进程未加载时原来的伪装从未生效。
+3. `ContextualSearchManagerService.isContextualSearchAvailable`（声明在 Binder 内部类里）对可信调用方返回 true，避免 SystemUI 的可用性缓存拦住一圈即搜。
+4. 隐藏手势条启动时补写 `OplusNavigationHandle.inGestureXRange`（并修 `shouldHandlePress`），重启后不再需要把手势条开关一次。
+5. 默认助理已设但 `voice_interaction_service` 为空时，按包内声明的 `VoiceInteractionService` 补全（本机该值已正确，属其他机型兜底）。
+
+日志关键字：`google_app_identity_spoofed`、`hook_installed target=…isContextualSearchAvailable`、`handle_press_range_bootstrapped`、`handle_press_availability_repaired`、`voice_interaction_service_repaired`。
+
+## 12. English summary
 
 ColorOS 唤语 (AssistRestore) is a minimal libxposed API 102 module that restores AOSP default-assistant behaviour on
 China-region ColorOS builds. The build keeps the AOSP assistant stack intact and only diverts each

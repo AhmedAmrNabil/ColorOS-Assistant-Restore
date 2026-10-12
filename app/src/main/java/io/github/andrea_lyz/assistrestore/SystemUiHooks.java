@@ -12,6 +12,7 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.view.View;
+import android.view.MotionEvent;
 import android.view.ViewParent;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -98,6 +99,9 @@ final class SystemUiHooks {
     private static final String ASSIST_TOUCH_GESTURE_ENABLED = "assist_touch_gesture_enabled";
     private static final String EXTRA_INVOCATION_TYPE = "invocation_type";
     private static final String SETTING_ASSISTANT = "assistant";
+    private static final String SETTING_VOICE_INTERACTION_SERVICE = "voice_interaction_service";
+    private static final String ACTION_VOICE_INTERACTION_SERVICE =
+            "android.service.voice.VoiceInteractionService";
 
     /**
      * The China-only nav-bar switch "长按手势指示条唤醒小布识屏" ({@code gesture_side_wake_cui} in
@@ -141,12 +145,14 @@ final class SystemUiHooks {
     }
 
     static void install(AssistRestoreModule module, ClassLoader classLoader) {
+        ensureVoiceInteractionService(module, TargetIntents.appContext());
         AssistPipeline pipeline = resolveAssistPipeline(module, classLoader);
         CtsPipeline cts = resolveCtsPipeline(module, classLoader);
         installAssistDispatch(module, classLoader, pipeline, cts);
         installAssistantAvailability(module, classLoader);
         installGestureHandleLongPress(module, classLoader, pipeline, cts);
         installOcrScreenHandleLongPress(module, classLoader, pipeline, cts);
+        installHandlePressAvailability(module, classLoader);
         installHiddenGestureBarHandleTouch(module, classLoader);
         installHandleTouchRegion(module, classLoader);
     }
@@ -254,13 +260,25 @@ final class SystemUiHooks {
                 module.logWarn("assist_dispatch_skipped reason=no_assistant_configured");
                 return null;
             }
-            boolean isService =
-                    assistInfo.equals(getVoiceInteractorComponentName.invoke(assistManager));
+            if (!(assistInfo instanceof ComponentName)) {
+                module.logWarn("assist_dispatch_skipped reason=unexpected_assistant_type type="
+                        + assistInfo.getClass().getName());
+                return null;
+            }
+            ComponentName assistComponent = (ComponentName) assistInfo;
+            Context context = contextOf(assistManager);
+            ensureVoiceInteractionService(module, context);
+            Object voiceInteractor = getVoiceInteractorComponentName.invoke(assistManager);
+            // ColorOS 17 does not always sync voice_interaction_service with the selected
+            // assistant, so the service the component declares is probed as well.
+            boolean isService = assistInfo.equals(voiceInteractor)
+                    || isDeclaredVoiceInteractionService(context, assistComponent);
             module.logInfo("assist_dispatch component=" + assistInfo
                     + " isService=" + isService
+                    + " voiceInteractor=" + voiceInteractor
                     + " invocationType=" + args.getInt(EXTRA_INVOCATION_TYPE, 0));
-            invokeStartAssistInternal(module, assistManager, args, assistInfo, isService);
-            return assistInfo;
+            invokeStartAssistInternal(module, assistManager, args, assistComponent, isService);
+            return assistComponent;
         }
 
         /**
@@ -356,6 +374,82 @@ final class SystemUiHooks {
             }
         }
         return null;
+    }
+
+    /**
+     * ColorOS 17 can leave {@code voice_interaction_service} empty even though the default assistant
+     * is set, which makes a service assistant look like a plain activity. Only a missing entry is
+     * filled, and only from a service the assistant's own package declares.
+     */
+    private static void ensureVoiceInteractionService(AssistRestoreModule module, Context context) {
+        if (context == null || !AssistConfig.isEnabled(HookPrefs.get())) {
+            return;
+        }
+        try {
+            ContentResolver resolver = context.getContentResolver();
+            String current = Settings.Secure.getString(resolver, SETTING_VOICE_INTERACTION_SERVICE);
+            if (current != null && !current.isEmpty()) {
+                return;
+            }
+            String assistantSetting = Settings.Secure.getString(resolver, SETTING_ASSISTANT);
+            ComponentName assistant = assistantSetting == null
+                    ? null : ComponentName.unflattenFromString(assistantSetting);
+            if (assistant == null) {
+                return;
+            }
+            ComponentName voiceService = resolveVoiceInteractionComponent(
+                    context, assistant.getPackageName());
+            if (voiceService == null) {
+                return;
+            }
+            String flattened = voiceService.flattenToString();
+            boolean written = false;
+            try {
+                Method putStringForUser = Settings.Secure.class.getMethod(
+                        "putStringForUser", ContentResolver.class, String.class,
+                        String.class, int.class);
+                Object result = putStringForUser.invoke(null, resolver,
+                        SETTING_VOICE_INTERACTION_SERVICE, flattened, -2);
+                written = !Boolean.FALSE.equals(result);
+            } catch (Throwable ignored) {
+                written = Settings.Secure.putString(
+                        resolver, SETTING_VOICE_INTERACTION_SERVICE, flattened);
+            }
+            if (written) {
+                module.logInfo("voice_interaction_service_repaired component=" + flattened);
+            } else {
+                module.logWarn("voice_interaction_service_repair_failed component=" + flattened);
+            }
+        } catch (Throwable t) {
+            module.logWarn("voice_interaction_service_repair_failed " + t);
+        }
+    }
+
+    /** @return true when the component is a VoiceInteractionService declared by its package */
+    private static boolean isDeclaredVoiceInteractionService(
+            Context context, ComponentName component) {
+        if (context == null || component == null) {
+            return false;
+        }
+        try {
+            Intent probe = new Intent(ACTION_VOICE_INTERACTION_SERVICE)
+                    .setPackage(component.getPackageName());
+            List<ResolveInfo> matches = context.getPackageManager().queryIntentServices(probe, 0);
+            if (matches == null) {
+                return false;
+            }
+            for (ResolveInfo match : matches) {
+                ServiceInfo serviceInfo = match.serviceInfo;
+                if (serviceInfo != null
+                        && component.getPackageName().equals(serviceInfo.packageName)
+                        && component.getClassName().equals(serviceInfo.name)) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Package information unavailable: keep the original answer.
+        }
+        return false;
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -749,7 +843,151 @@ final class SystemUiHooks {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // 5. NavBarUtils.isSideGestureBarHide
+    // 5. OplusNavigationHandle press bootstrap
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * Repairs the handle's press handling when the gesture bar was already hidden at boot: the
+     * handler then never sees a laid-out bar, {@code inGestureXRange} stays unset and the long press
+     * does nothing until the bar is toggled once. The horizontal range is rebuilt from the same OEM
+     * dimension the bar draws with and only written while the bar has no layout.
+     */
+    private static void installHandlePressAvailability(
+            AssistRestoreModule module, ClassLoader classLoader) {
+        try {
+            Class<?> handle = Class.forName(SIDE_GESTURE_HANDLE, true, classLoader);
+            Method handleValidTouchEvent = handle.getMethod(
+                    "handleValidTouchEvent", MotionEvent.class);
+            module.hook(handleValidTouchEvent)
+                    .setId("handle_press_range_bootstrap")
+                    .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                    .intercept(chain -> {
+                        Object handleObject = chain.getThisObject();
+                        MotionEvent event = (MotionEvent) chain.getArg(0);
+                        repairHiddenHandleGestureRange(module, handleObject, event, true);
+                        Object result = chain.proceed();
+                        repairHiddenHandleGestureRange(module, handleObject, event, false);
+                        return result;
+                    });
+            module.logInfo("hook_installed target=" + SIDE_GESTURE_HANDLE
+                    + ".handleValidTouchEvent");
+
+            Method shouldHandlePress = handle.getMethod("shouldHandlePress");
+            module.hook(shouldHandlePress)
+                    .setId("handle_press_availability")
+                    .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                    .intercept(chain -> {
+                        Object result = chain.proceed();
+                        if (Boolean.TRUE.equals(result)
+                                || !handleOwnedByModule()
+                                || !isHandleInGestureRange(chain.getThisObject())) {
+                            return result;
+                        }
+                        Object handleObject = chain.getThisObject();
+                        if (isKeyguardShowing(handleObject)) {
+                            return result;
+                        }
+                        Context context = handleObject instanceof View
+                                ? ((View) handleObject).getContext() : null;
+                        if (context != null && isHandleWakeSwitchOff(module, context)) {
+                            return result;
+                        }
+                        module.logInfo("handle_press_availability_repaired");
+                        return Boolean.TRUE;
+                    });
+            module.logInfo("hook_installed target=" + SIDE_GESTURE_HANDLE + ".shouldHandlePress");
+        } catch (Throwable t) {
+            module.logWarn("hook_skipped target=" + SIDE_GESTURE_HANDLE
+                    + ".shouldHandlePress " + t);
+        }
+    }
+
+    /**
+     * Writes the bar's horizontal range into {@code inGestureXRange} before the first press is
+     * judged, but only while the bar has no layout (the boot-with-hidden-bar case); once it is laid
+     * out, the OEM logic owns the field.
+     */
+    private static void repairHiddenHandleGestureRange(
+            AssistRestoreModule module, Object handleObject, MotionEvent event, boolean before) {
+        if (!(handleObject instanceof View)
+                || event == null
+                || event.getActionMasked() != MotionEvent.ACTION_DOWN
+                || !handleOwnedByModule()) {
+            return;
+        }
+        View handle = (View) handleObject;
+        if (handle.getWidth() > 0) {
+            return;
+        }
+        int barWidth = gestureBarWidthForCurrentRotation(handle);
+        if (barWidth <= 0) {
+            return;
+        }
+        int screenWidth = handle.getRootView() == null ? 0 : handle.getRootView().getWidth();
+        if (screenWidth <= 0) {
+            screenWidth = handle.getResources().getDisplayMetrics().widthPixels;
+        }
+        if (screenWidth <= 0) {
+            return;
+        }
+        int left = Math.max(0, (screenWidth - barWidth) / 2);
+        int right = left + barWidth;
+        boolean inRange = event.getX() >= left && event.getX() <= right;
+        Field rangeField = Refl.field(handle.getClass(), "inGestureXRange");
+        if (rangeField == null) {
+            return;
+        }
+        try {
+            rangeField.setBoolean(handle, inRange);
+            if (before && inRange) {
+                module.logInfo("handle_press_range_bootstrapped left=" + left
+                        + " right=" + right);
+            }
+        } catch (Throwable t) {
+            module.logWarn("handle_press_range_bootstrap_failed " + t);
+        }
+    }
+
+    /** Bar width for the current rotation, falling back to the portrait dimension. */
+    private static int gestureBarWidthForCurrentRotation(View view) {
+        try {
+            int rotation = view.getDisplay() == null ? 0 : view.getDisplay().getRotation();
+            String name = rotation == 1 || rotation == 3
+                    ? "navigation_gesture_view_landscape_width"
+                    : "navigation_gesture_view_width";
+            int width = oplusDimension(view, name);
+            return width > 0 ? width : gestureBarWidth(view);
+        } catch (Throwable ignored) {
+            return gestureBarWidth(view);
+        }
+    }
+
+    private static boolean isHandleInGestureRange(Object handle) {
+        Field field = handle == null ? null : Refl.field(handle.getClass(), "inGestureXRange");
+        if (field == null) {
+            return false;
+        }
+        try {
+            return field.getBoolean(handle);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isKeyguardShowing(Object handle) {
+        Field field = handle == null ? null : Refl.field(handle.getClass(), "isKeyguardShowing");
+        if (field == null) {
+            return false;
+        }
+        try {
+            return field.getBoolean(handle);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // 6. NavBarUtils.isSideGestureBarHide
     // ---------------------------------------------------------------------------------------------
 
     /**
@@ -824,7 +1062,7 @@ final class SystemUiHooks {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // 6. The gesture bar area belongs to the navigation-bar window
+    // 7. The gesture bar area belongs to the navigation-bar window
     // ---------------------------------------------------------------------------------------------
 
     /**

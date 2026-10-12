@@ -47,7 +47,8 @@ public final class AssistRestoreModule extends XposedModule {
     @Override
     public void onPackageReady(XposedModuleInterface.PackageReadyParam param) {
         String packageName = param.getPackageName();
-        if (GOOGLE_APP_PACKAGE.equals(packageName) && GOOGLE_APP_PACKAGE.equals(processName)) {
+        if (GOOGLE_APP_PACKAGE.equals(packageName)
+                && isPackageProcess(GOOGLE_APP_PACKAGE, processName)) {
             if (googleAppInstalled) {
                 return;
             }
@@ -83,6 +84,14 @@ public final class AssistRestoreModule extends XposedModule {
         } catch (Throwable t) {
             logError("systemui_install_failed", t);
         }
+    }
+
+    /**
+     * The Google app spreads its feature entry points over several named processes, so its identity
+     * hooks have to cover the whole package; every other package keeps the exact process match.
+     */
+    private static boolean isPackageProcess(String packageName, String process) {
+        return packageName.equals(process) || process.startsWith(packageName + ":");
     }
 
     @Override

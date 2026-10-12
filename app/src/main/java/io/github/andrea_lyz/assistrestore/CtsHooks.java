@@ -50,6 +50,7 @@ final class CtsHooks {
         int packageNameResId = resolvePackageNameResId(module, classLoader);
         installDeviceHasConfigString(module, classLoader, packageNameResId);
         installContextualSearchPackageName(module, classLoader);
+        installContextualSearchAvailability(module, classLoader);
         installPermissionBypass(module, classLoader);
         installStartContextualSearch(module, classLoader);
     }
@@ -112,6 +113,47 @@ final class CtsHooks {
         } catch (Throwable t) {
             module.logError("hook_failed target=" + CTS_SERVICE
                     + ".getContextualSearchPackageName", t);
+        }
+    }
+
+    /**
+     * SystemUI caches the availability answer, so a China build keeps treating Circle to Search as
+     * missing even after the package name is in place. The override is limited to the trusted
+     * callers (system / SystemUI), like the permission bypass below.
+     */
+    private static void installContextualSearchAvailability(
+            AssistRestoreModule module, ClassLoader classLoader) {
+        try {
+            Class<?> service = Class.forName(CTS_SERVICE, true, classLoader);
+            Method method = method(service, "isContextualSearchAvailable");
+            if (method == null) {
+                // The handler lives in the service's binder subclass, like startContextualSearch.
+                for (Class<?> inner : service.getDeclaredClasses()) {
+                    method = method(inner, "isContextualSearchAvailable");
+                    if (method != null) {
+                        break;
+                    }
+                }
+            }
+            if (method == null) {
+                module.logInfo("hook_skipped target=" + CTS_SERVICE
+                        + ".isContextualSearchAvailable reason=not_found");
+                return;
+            }
+            module.hook(method)
+                    .setId("cts_is_available")
+                    .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                    .intercept(chain -> {
+                        if (isTrustedCaller(module)) {
+                            return Boolean.TRUE;
+                        }
+                        return chain.proceed();
+                    });
+            module.logInfo("hook_installed target=" + CTS_SERVICE
+                    + ".isContextualSearchAvailable");
+        } catch (Throwable t) {
+            module.logError("hook_failed target=" + CTS_SERVICE
+                    + ".isContextualSearchAvailable", t);
         }
     }
 
