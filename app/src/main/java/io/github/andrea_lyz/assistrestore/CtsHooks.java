@@ -33,6 +33,9 @@ final class CtsHooks {
     private static final String CTS_SERVICE =
             "com.android.server.contextualsearch.ContextualSearchManagerService";
     private static final String SYSTEM_SERVER = "com.android.server.SystemServer";
+    /** Android 17 added a config argument to the contextual-search entry point. */
+    private static final String CTS_CONFIG =
+            "android.app.contextualsearch.ContextualSearchConfig";
 
     static final String PKG_GOOGLE = "com.google.android.googlequicksearchbox";
     private static final String PKG_SYSTEMUI = "com.android.systemui";
@@ -171,7 +174,11 @@ final class CtsHooks {
                 continue;
             }
             Class<?>[] parameterTypes = candidate.getParameterTypes();
-            if (parameterTypes.length != 1 || parameterTypes[0] != int.class) {
+            boolean legacySignature = parameterTypes.length == 1 && parameterTypes[0] == int.class;
+            boolean configSignature = parameterTypes.length == 2
+                    && parameterTypes[0] == int.class
+                    && CTS_CONFIG.equals(parameterTypes[1].getName());
+            if (!legacySignature && !configSignature) {
                 continue;
             }
             candidate.setAccessible(true);

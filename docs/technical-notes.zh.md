@@ -435,7 +435,40 @@ CN 固件的 SystemUI 里 CTS 那套是空实现（`OplusCircleToSearchManagerEx
 
 与 Oplus-Assistant-Hook 的关系：两边都做同一件事，**同一手势不要同时启用**——如果启用对方模块的手势条或电源键接管（它挂在 `OplusOcrScreenBusiness.onLongPressed` / `OplusSpeechHandler.handleMessage` 等更外层），它会先接管并直接返回，本模块对应 Hook 就不会执行。
 
-## 9. English summary
+## 9. ColorOS 17 适配（2026-10-12）
+
+设备：PJZ110 / `PJZ110_17.0.0.103(CN01)` / `ro.build.version.oplusrom=V17.0.0` / `ro.build.version.release=17` / `sdk=37` / `regionmark=CN`。
+1.0.4 在升级后三个入口同时失效，模块日志显示 `assist_pipeline_resolve_failed`，随后三个依赖派发链路的 Hook 全部 `hook_skipped target=... reason=assist_pipeline_unavailable`。四份固件产物与 ColorOS 16 的 md5 全部不同：
+
+| 文件 | ColorOS 16 md5 | ColorOS 17 md5 |
+| --- | --- | --- |
+| SystemUI | `e249e527020ee80547dd8200179b0656` | `4cc34e5bb6ce8c3b16d83b1d6cf727b0` |
+| services.jar | `ce501d636dcee11e2bef77a2270eaead` | `3325c3742ca03c69b831e139c0330a67` |
+| oplus-services.jar | `9658e6361030204c749d74d2fb7a5ae7` | `d5e02cc651b8a819bd6d023c9fddf77e` |
+| OplusLauncher | `e77c29b92cc2df3aece19d5dc46b45d2` | `e95904a93903e2691649d108ac8458eb` |
+
+四处签名/命名变化：
+
+1. `AssistManager.startAssistInternal` 变为 `(Context, Bundle, ComponentName, boolean)`（新增显示 Context），入口方法在 dex 里叫 `startAssist$1(Bundle)`（D8 产物），`NavBarHelper.startAssistant`、`CentralSurfacesCommandQueueCallbacks.startAssist`、`DozeServiceHost`、`GoogleNowTile` 都指向它；区域闸门同时加入 `OpUtils.sIsClosedSuperFirewall`。
+2. 桌面不再拿到共享的 `com.android.systemui.shared.system.QuickStepContract`（launcher 类加载器里已无此类），同一规则内嵌为桌面自带的混淆副本 `ab.n.c(long)`（`TouchInteractionService` dumpsys 仍按它输出 `assistantDisabled=`）。
+3. `IContextualSearchManager.startContextualSearch` 变为 `(int, ContextualSearchConfig)`，默认参数用 `ContextualSearchConfig.DEFAULT_CONFIG`。
+4. `overview_disabled`(128) / `search_disabled`(1024) 在 17 上只由 `NavigationBarView.setDisabledFlags` 从状态栏 `DISABLE_RECENT` / `DISABLE_SEARCH` 派生；实测设置页与桌面都不再带这两位（`systemUiFlagsDesc=…allow_gesture…`、`assistantDisabled=false`；展开 QS 时 `qs_visible|qs_expanded`、`assistantDisabled=true`，说明位更新与 Hook 链都正常）。因此「解除页面级手势限制」在 17 上没有可放开的目标：UI 灰显并标注不支持，运行期 LauncherHook 也按不支持处理（只打一条 `assist_gesture_unblock_skipped reason=unsupported_on_this_build`），该选项保留给 ColorOS 16。
+
+1.0.6 重启后的运行时日志：`hook_installed target=ab.n.c`（launcher）；`com.android.systemui.assist.AssistManager.startAssist$1`、`…SpeedChassistMainBusiness.onLongPressed`、`…OplusOcrScreenServiceHandler.onPreLongPress/onLongPressed/handleLongPressAction`（SystemUI）；`ContextualSearchManagerService.startContextualSearch count=1`、`cts_device_has_config_string forced=true`（system）。真机复测：长按电源键、长按手势条、底角内滑（桌面与设置页）均正常派发到默认助理。
+
+## 10. 双击电源键改为 Google 钱包（2026-10-12）
+
+国内版双击电源键的完整链路（`oplus-services.jar` / system_server，机型 PJZ110 / `V17.0.0.103`）：
+
+1. `PhoneWindowManagerExtImpl.oplusInterceptPowerKeyUp()`：先看 `OplusDoubleWakeAppController.isQuickDoubleWakeAppSupport()`（= 是否装了 `com.oplus.doublewake.settings`），本机未安装，于是落到 `OplusWalletController.isQuickLaunchSupport()` → `sendCheckWalletMessage()`（`MSG_WALLET_CHECK` 1015，KeyUp 后 200 ms；闸门：`getWalletSwitchState() != 0`、非水下相机、恰好两次电源键按下、未交给语音长按）。
+2. `OplusWalletController.startWallet(boolean)`：启动目标来自 `/etc/extension/default_wallet_configuration.xml`（`OplusCfgFilePolicy` 取最高优先级，本机为 `/my_region/etc/extension/`）：`package=com.finshell.wallet`、`action=finshell.wallet.intent.action.OPEN`；`FLAG_ACTIVITY_NEW_TASK` + `startActivityAsUser`。真机实测落到 `com.finshell.wallet/com.nearme.wallet.nfc.ui.NfcConsumeActivity`（NFC 刷卡页）。开关值来自钱包 App 的 `*.quickstart.flag.provider.open/CARD_BAG_FLAG`（本机 `SUPPORT_QUICK_START=true`、`HAS_ACTIVE_CARD=true`、`PERIOD=72`），并缓存到 `/data/oplus/os/walletdata`。
+3. 模块接管：Hook `OplusWalletController.startWallet(boolean)`（system_server），改为启动 `com.android.systemui/com.android.systemui.wallet.ui.WalletActivity`——AOSP 快捷访问钱包界面（`showWhenLocked=true`，卡片由 `QuickAccessWalletClient` 从钱包角色拉取；本机钱包角色持有者是 `com.google.android.gms`，即 Google 钱包）。该 Activity 未导出，shell 启动会被拒，但 system_server 通过 `START_ANY_ACTIVITY` 判定后可启动，真机已确认弹出 Google 钱包刷卡界面。启动失败或选项关闭时回落到 OEM 钱包；选项默认关闭。
+
+限制：需要保持 ColorOS 的「双击电源键唤起快捷服务」开关为开（否则 `startWallet` 根本不会被调用）；Google 钱包需已登录并至少有一张卡。日志关键字：`hook_installed target=com.android.server.policy.OplusWalletController.startWallet`、`double_press_wallet target=quick_access_wallet launched=true`、`double_press_wallet_failed`。
+
+真机确认（2026-10-12）：开启该选项后双击电源键弹出 Google 钱包刷卡界面，锁屏（息屏）状态下同样弹出；LSPosed 日志为多条 `double_press_wallet target=quick_access_wallet launched=true`，无 `double_press_wallet_failed`。
+
+## 11. English summary
 
 ColorOS 唤语 (AssistRestore) is a minimal libxposed API 102 module that restores AOSP default-assistant behaviour on
 China-region ColorOS builds. The build keeps the AOSP assistant stack intact and only diverts each

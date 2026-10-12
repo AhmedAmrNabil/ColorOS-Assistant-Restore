@@ -4,7 +4,7 @@
 [![English](https://img.shields.io/badge/README-English-5b6b8c?style=for-the-badge)](README_EN.md)
 
 [![libxposed API](https://img.shields.io/badge/libxposed-API%20102-brightgreen)](https://github.com/libxposed/api)
-[![Platform](https://img.shields.io/badge/ColorOS-16%20CN-1a73e8)](docs/technical-notes.zh.md)
+[![Platform](https://img.shields.io/badge/ColorOS-16%20%7C%2017%20CN-1a73e8)](docs/technical-notes.zh.md)
 [![Root](https://img.shields.io/badge/Root-KernelSU%20%7C%20Magisk-orange)](#requirements)
 
 Restores AOSP digital-assistant behaviour on China-region ColorOS builds.
@@ -28,10 +28,11 @@ Each entry has its own wake target and can be turned off individually. Beyond th
 - **No useless wake-up**: holding the gesture handle no longer pre-binds the OEM screen recognition service.
 - **Holding the handle only summons the assistant**: the bar's own strip (about 480x88 px) belongs to the system navigation bar window, so the page no longer fires its own long press at the same time; this also holds with the gesture bar hidden, and the strip goes back to the keyboard while it is up.
 - **Process retention**: a frozen Google app is the usual reason a dispatch succeeds with nothing on screen, so the module exempts that app at the OEM freeze decision point.
+- **Double-press power** (optional): skips the ColorOS wallet and opens the system quick-access wallet screen instead (the wallet role, i.e. Google Wallet).
 
 ## Requirements
 
-- A China-region ColorOS build. Verified on ColorOS 16 / `V16.1.0` / PJZ110 / `regionmark=CN`.
+- A China-region ColorOS build. Verified on ColorOS 16 `V16.1.0` and ColorOS 17 `V17.0.0.103` / PJZ110 / `regionmark=CN`.
 - Root via KernelSU, Magisk, or similar.
 - A framework that supports libxposed API 102, such as LSPosed.
 
@@ -76,9 +77,10 @@ The app has two bottom pages; detail pages are reached from the entry page.
 | Option | Default | Meaning |
 | --- | --- | --- |
 | Skip screen-recognition pre-bind | On | Holding the gesture handle no longer pre-binds the OEM screen recognition service |
-| Unblock page-level gestures | On | Clears the page-level flags requested by apps so Settings and similar pages accept the corner swipe |
+| Unblock page-level gestures | On | Clears the page-level flags requested by apps so Settings and similar pages accept the corner swipe (ColorOS 17 no longer applies that block, so the option is greyed out and inactive there) |
 | Spoof Google app device model | On | Reports SM-S928B inside the Google app process to unlock Circle to Search |
 | Keep the handle press with a hidden bar | On | ColorOS stops feeding the gesture handle as soon as the bar is hidden; with this on, the long press at the same bottom position still wakes the entry's configured target. The bar itself stays hidden |
+| Double-press power uses Google Wallet | Off | Opens the system quick-access wallet screen (Google Wallet card screen) instead of the ColorOS wallet quick launch; the system "double press for quick service" switch must stay on |
 | Hide the launcher icon | Off | Removes the home-screen icon (the launcher entry is an activity alias). The entry activity keeps a MAIN + INFO filter, so the app still opens from LSPosed and from the system app-info page |
 
 The power-key haptic feedback is always on and has no setting.
@@ -121,6 +123,10 @@ JDK 21 and an Android SDK with `compileSdk 37` are required. The project uses th
 The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. Add `--offline` when the dependency cache is already populated.
 
 ## Version
+
+**1.0.7** - New option to make a power-key double press open the system quick-access wallet screen instead of the ColorOS wallet (off by default).
+
+**1.0.6** - ColorOS 17 (`V17.0.0.103` / API 37) support: `AssistManager`, the launcher corner-gesture rule and the Circle to Search interface now resolve against the new signatures; "Unblock page-level gestures" is ColorOS 16 only and is greyed out on 17, where the system no longer applies that block.
 
 **1.0.0** - all three entries restored, with per-entry wake targets, Circle to Search, page-level gesture unblocking, and Google app process retention.
 

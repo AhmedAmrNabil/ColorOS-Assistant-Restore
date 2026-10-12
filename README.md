@@ -4,7 +4,7 @@
 [![English](https://img.shields.io/badge/README-English-5b6b8c?style=for-the-badge)](README_EN.md)
 
 [![libxposed API](https://img.shields.io/badge/libxposed-API%20102-brightgreen)](https://github.com/libxposed/api)
-[![Platform](https://img.shields.io/badge/ColorOS-16%20CN-1a73e8)](docs/technical-notes.zh.md)
+[![Platform](https://img.shields.io/badge/ColorOS-16%20%7C%2017%20CN-1a73e8)](docs/technical-notes.zh.md)
 [![Root](https://img.shields.io/badge/Root-KernelSU%20%7C%20Magisk-orange)](#环境要求)
 
 在 ColorOS 国内版上还原 AOSP 的数字助理行为。
@@ -28,10 +28,11 @@
 - **抑制无用唤醒**：长按手势条时不再预先白唤醒一次小布识屏服务。
 - **按住手势条只触发助理**：手势条自己那条区域（约 480×88px）归属系统导航栏窗口，页面不会再同时触发自己的长按；隐藏手势条时同样成立，输入法弹起时该区域交还键盘。
 - **进程保活**：Google 应用被系统冻结是「派发成功但屏幕没反应」的常见原因，模块在 OEM 冻结决策处对该应用做了豁免。
+- **双击电源键**（可选）：不启动 ColorOS 钱包，改为打开系统快捷钱包界面（系统钱包角色 = Google 钱包）刷卡。
 
 ## 环境要求
 
-- ColorOS 国内版固件（已在 ColorOS 16 / `V16.1.0` / PJZ110 / `regionmark=CN` 上验证）。
+- ColorOS 国内版固件（已在 ColorOS 16 `V16.1.0` 与 ColorOS 17 `V17.0.0.103` / PJZ110 / `regionmark=CN` 上验证）。
 - KernelSU 或 Magisk 等 Root 方案。
 - LSPosed 等支持 libxposed API 102 的框架。
 
@@ -76,9 +77,10 @@
 | 选项 | 默认 | 说明 |
 | --- | --- | --- |
 | 跳过识屏服务预绑定 | 开 | 长按手势条时不再白唤醒一次小布识屏服务 |
-| 解除页面级手势限制 | 开 | 放开应用请求的页面级屏蔽位，设置等页面也能用底角内滑 |
+| 解除页面级手势限制 | 开 | 放开应用请求的页面级屏蔽位，设置等页面也能用底角内滑（ColorOS 17 起系统不再提供该屏蔽，此项在 17 上灰显不可用） |
 | Google 应用机型伪装 | 开 | 在 Google 应用进程内伪装为 SM-S928B，解锁一圈即搜 |
 | 隐藏手势条时保持长按 | 开 | ColorOS 在隐藏手势条后会连手势条区域的长按一起停用；打开后底部原位置的长按照常唤醒该入口配置的目标。手势条本身的显示不变 |
+| 双击电源键改用 Google 钱包 | 关 | 双击电源键打开系统快捷钱包界面（Google 钱包刷卡），替代 ColorOS 钱包快捷刷卡；需保持系统「双击电源键唤起快捷服务」开启 |
 | 隐藏桌面图标 | 关 | 关掉桌面上的图标（Launcher 入口是一个 activity-alias）。入口 Activity 仍保留 MAIN + INFO 过滤器，所以隐藏后依然能从 LSPosed 模块页或系统设置的应用详情打开本应用 |
 
 长按电源键的震动反馈固定开启，不提供开关。
@@ -121,6 +123,10 @@
 产物位于 `app/build/outputs/apk/debug/app-debug.apk`。离线环境可在依赖缓存完整时加 `--offline`。
 
 ## 版本
+
+**1.0.7** — 新增「双击电源键改用 Google 钱包」：接管 `OplusWalletController.startWallet`，改为打开系统快捷钱包界面（默认关）。
+
+**1.0.6** — ColorOS 17（`V17.0.0.103` / API 37）适配：`AssistManager`、桌面底角手势规则与一圈即搜接口按新签名解析；「解除页面级手势限制」仅在 ColorOS 16 有效，17 上灰显（系统不再提供页面级屏蔽位）。
 
 **1.0.0** — 三个入口全部可用，支持逐入口选择唤醒目标、一圈即搜、页面级手势放开与 Google 应用进程保活。
 

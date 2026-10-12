@@ -95,6 +95,12 @@ class SettingsStore(context: Context) {
     fun setHandleWhenBarHidden(value: Boolean) =
         put(AssistConfig.KEY_HANDLE_WHEN_BAR_HIDDEN, value)
 
+    fun doublePressWallet(): Boolean = current()
+        .getBoolean(AssistConfig.KEY_DOUBLE_PRESS_WALLET, AssistConfig.DEFAULT_DOUBLE_PRESS_WALLET)
+
+    fun setDoublePressWallet(value: Boolean) =
+        put(AssistConfig.KEY_DOUBLE_PRESS_WALLET, value)
+
     fun mode(entry: String): String =
         current().getString(entry + "_mode", AssistConfig.MODE_DEFAULT) ?: AssistConfig.MODE_DEFAULT
 
