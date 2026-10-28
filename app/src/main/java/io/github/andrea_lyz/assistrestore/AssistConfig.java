@@ -42,15 +42,19 @@ public final class AssistConfig {
     public static final String KEY_UNBLOCK_PAGE_FLAGS = "unblock_page_flags";
     public static final String KEY_SPOOF_GOOGLE_BUILD = "spoof_google_build";
     public static final String KEY_HANDLE_WHEN_BAR_HIDDEN = "handle_when_bar_hidden";
-    /** Double press opens the system quick-access wallet (Google Wallet) instead of the OEM one. */
-    public static final String KEY_DOUBLE_PRESS_WALLET = "double_press_wallet";
+    /** Double press opens the camera instead of the OEM wallet. */
+    public static final String KEY_DOUBLE_PRESS_CAMERA = "double_press_camera";
+    @Deprecated
+    public static final String KEY_DOUBLE_PRESS_WALLET = KEY_DOUBLE_PRESS_CAMERA;
 
     public static final boolean DEFAULT_ENABLED = true;
     public static final boolean DEFAULT_SKIP_OCR_PRELOAD = true;
     public static final boolean DEFAULT_UNBLOCK_PAGE_FLAGS = true;
     public static final boolean DEFAULT_SPOOF_GOOGLE_BUILD = true;
     public static final boolean DEFAULT_HANDLE_WHEN_BAR_HIDDEN = true;
-    public static final boolean DEFAULT_DOUBLE_PRESS_WALLET = false;
+    public static final boolean DEFAULT_DOUBLE_PRESS_CAMERA = false;
+    @Deprecated
+    public static final boolean DEFAULT_DOUBLE_PRESS_WALLET = DEFAULT_DOUBLE_PRESS_CAMERA;
 
     /**
      * Whether the launcher still receives the page-level gesture block. ColorOS 17 (API 37)
@@ -114,12 +118,21 @@ public final class AssistConfig {
     }
 
     /**
-     * Whether a power-key double press opens the system quick-access wallet screen (which serves
-     * the default wallet role, i.e. Google Wallet on a GMS device) instead of the OEM wallet quick
-     * launch. Off by default so the OEM behaviour stays untouched unless it is requested.
+     * Whether a power-key double press opens the camera instead of the OEM wallet quick launch.
+     * Off by default so the OEM behaviour stays untouched unless it is requested.
      */
+    public static boolean doublePressCamera(SharedPreferences prefs) {
+        if (prefs == null) {
+            return false;
+        }
+        if (prefs.contains(KEY_DOUBLE_PRESS_CAMERA)) {
+            return prefs.getBoolean(KEY_DOUBLE_PRESS_CAMERA, DEFAULT_DOUBLE_PRESS_CAMERA);
+        }
+        return prefs.getBoolean("double_press_wallet", DEFAULT_DOUBLE_PRESS_CAMERA);
+    }
+
+    @Deprecated
     public static boolean doublePressWallet(SharedPreferences prefs) {
-        return prefs != null
-                && prefs.getBoolean(KEY_DOUBLE_PRESS_WALLET, DEFAULT_DOUBLE_PRESS_WALLET);
+        return doublePressCamera(prefs);
     }
 }

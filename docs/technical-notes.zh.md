@@ -456,17 +456,15 @@ CN 固件的 SystemUI 里 CTS 那套是空实现（`OplusCircleToSearchManagerEx
 
 1.0.6 重启后的运行时日志：`hook_installed target=ab.n.c`（launcher）；`com.android.systemui.assist.AssistManager.startAssist$1`、`…SpeedChassistMainBusiness.onLongPressed`、`…OplusOcrScreenServiceHandler.onPreLongPress/onLongPressed/handleLongPressAction`（SystemUI）；`ContextualSearchManagerService.startContextualSearch count=1`、`cts_device_has_config_string forced=true`（system）。真机复测：长按电源键、长按手势条、底角内滑（桌面与设置页）均正常派发到默认助理。
 
-## 10. 双击电源键改为 Google 钱包（2026-10-12）
+## 10. 双击电源键改为启动相机
 
 国内版双击电源键的完整链路（`oplus-services.jar` / system_server，机型 PJZ110 / `V17.0.0.103`）：
 
 1. `PhoneWindowManagerExtImpl.oplusInterceptPowerKeyUp()`：先看 `OplusDoubleWakeAppController.isQuickDoubleWakeAppSupport()`（= 是否装了 `com.oplus.doublewake.settings`），本机未安装，于是落到 `OplusWalletController.isQuickLaunchSupport()` → `sendCheckWalletMessage()`（`MSG_WALLET_CHECK` 1015，KeyUp 后 200 ms；闸门：`getWalletSwitchState() != 0`、非水下相机、恰好两次电源键按下、未交给语音长按）。
 2. `OplusWalletController.startWallet(boolean)`：启动目标来自 `/etc/extension/default_wallet_configuration.xml`（`OplusCfgFilePolicy` 取最高优先级，本机为 `/my_region/etc/extension/`）：`package=com.finshell.wallet`、`action=finshell.wallet.intent.action.OPEN`；`FLAG_ACTIVITY_NEW_TASK` + `startActivityAsUser`。真机实测落到 `com.finshell.wallet/com.nearme.wallet.nfc.ui.NfcConsumeActivity`（NFC 刷卡页）。开关值来自钱包 App 的 `*.quickstart.flag.provider.open/CARD_BAG_FLAG`（本机 `SUPPORT_QUICK_START=true`、`HAS_ACTIVE_CARD=true`、`PERIOD=72`），并缓存到 `/data/oplus/os/walletdata`。
-3. 模块接管：Hook `OplusWalletController.startWallet(boolean)`（system_server），改为启动 `com.android.systemui/com.android.systemui.wallet.ui.WalletActivity`——AOSP 快捷访问钱包界面（`showWhenLocked=true`，卡片由 `QuickAccessWalletClient` 从钱包角色拉取；本机钱包角色持有者是 `com.google.android.gms`，即 Google 钱包）。该 Activity 未导出，shell 启动会被拒，但 system_server 通过 `START_ANY_ACTIVITY` 判定后可启动，真机已确认弹出 Google 钱包刷卡界面。启动失败或选项关闭时回落到 OEM 钱包；选项默认关闭。
+3. 模块接管：Hook `OplusWalletController.startWallet(boolean)`（system_server），改为启动系统相机：锁屏状态（`KeyguardManager.isKeyguardLocked()`）下分发 `MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA_SECURE`（安全相机，带 `FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS`），解锁状态下分发 `MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA`。启动失败或选项关闭时回落到 OEM 钱包；选项默认关闭。
 
-限制：需要保持 ColorOS 的「双击电源键唤起快捷服务」开关为开（否则 `startWallet` 根本不会被调用）；Google 钱包需已登录并至少有一张卡。日志关键字：`hook_installed target=com.android.server.policy.OplusWalletController.startWallet`、`double_press_wallet target=quick_access_wallet launched=true`、`double_press_wallet_failed`。
-
-真机确认（2026-10-12）：开启该选项后双击电源键弹出 Google 钱包刷卡界面，锁屏（息屏）状态下同样弹出；LSPosed 日志为多条 `double_press_wallet target=quick_access_wallet launched=true`，无 `double_press_wallet_failed`。
+限制：需要保持 ColorOS 的「双击电源键唤起快捷服务」开关为开（否则 `startWallet` 根本不会被调用）。日志关键字：`hook_installed target=com.android.server.policy.OplusWalletController.startWallet`、`double_press_camera target=... locked=... launched=true`、`double_press_camera_failed`。
 
 ## 11. 1.0.8：吸收 PR #3 的补充修复（2026-10-12）
 

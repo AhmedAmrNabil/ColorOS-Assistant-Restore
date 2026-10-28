@@ -101,7 +101,7 @@ public final class AssistRestoreModule extends XposedModule {
         }
         try {
             SystemServerHooks.install(this, param.getClassLoader());
-            WalletHooks.install(this, param.getClassLoader());
+            CameraHooks.install(this, param.getClassLoader());
             CtsHooks.install(this, param.getClassLoader());
             HansProcessFreezeHooks.install(this, param.getClassLoader());
             systemServerInstalled = true;

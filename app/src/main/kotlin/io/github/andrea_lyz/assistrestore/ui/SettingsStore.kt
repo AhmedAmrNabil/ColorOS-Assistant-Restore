@@ -95,11 +95,19 @@ class SettingsStore(context: Context) {
     fun setHandleWhenBarHidden(value: Boolean) =
         put(AssistConfig.KEY_HANDLE_WHEN_BAR_HIDDEN, value)
 
-    fun doublePressWallet(): Boolean = current()
-        .getBoolean(AssistConfig.KEY_DOUBLE_PRESS_WALLET, AssistConfig.DEFAULT_DOUBLE_PRESS_WALLET)
+    fun doublePressCamera(): Boolean = current().getBoolean(
+        AssistConfig.KEY_DOUBLE_PRESS_CAMERA,
+        current().getBoolean("double_press_wallet", AssistConfig.DEFAULT_DOUBLE_PRESS_CAMERA),
+    )
 
-    fun setDoublePressWallet(value: Boolean) =
-        put(AssistConfig.KEY_DOUBLE_PRESS_WALLET, value)
+    fun setDoublePressCamera(value: Boolean) =
+        put(AssistConfig.KEY_DOUBLE_PRESS_CAMERA, value)
+
+    @Deprecated("Use doublePressCamera instead", ReplaceWith("doublePressCamera()"))
+    fun doublePressWallet(): Boolean = doublePressCamera()
+
+    @Deprecated("Use setDoublePressCamera instead", ReplaceWith("setDoublePressCamera(value)"))
+    fun setDoublePressWallet(value: Boolean) = setDoublePressCamera(value)
 
     fun mode(entry: String): String =
         current().getString(entry + "_mode", AssistConfig.MODE_DEFAULT) ?: AssistConfig.MODE_DEFAULT

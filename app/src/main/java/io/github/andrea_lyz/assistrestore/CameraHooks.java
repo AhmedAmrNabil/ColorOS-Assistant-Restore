@@ -1,9 +1,11 @@
 package io.github.andrea_lyz.assistrestore;
 
-import android.content.ComponentName;
+import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.UserHandle;
+import android.provider.MediaStore;
+import android.content.pm.PackageManager;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -11,25 +13,18 @@ import java.lang.reflect.Method;
 import io.github.libxposed.api.XposedInterface;
 
 /**
- * Power-key double press: replaces the OEM wallet quick launch with the system quick-access wallet
- * screen.
+ * Power-key double press: replaces the OEM wallet quick launch with launching the camera.
  *
  * <p>A China build funnels the double press into {@code OplusWalletController.startWallet}, which
  * starts the wallet named by {@code /etc/extension/default_wallet_configuration.xml} (the ColorOS
- * wallet). This hook keeps that call site and instead opens SystemUI's
- * {@code com.android.systemui.wallet.ui.WalletActivity}: the AOSP quick-access wallet screen, fed
- * by the default wallet role, which is the Google Wallet service on a GMS device. The activity is
- * {@code showWhenLocked}, so it also comes up over the keyguard, and system_server may start it
- * even though it is not exported.</p>
+ * wallet). This hook intercepts that call site and instead launches the camera (secure camera over
+ * keyguard if locked, or standard camera if unlocked).</p>
  */
-final class WalletHooks {
+final class CameraHooks {
     private static final String WALLET_CONTROLLER =
             "com.android.server.policy.OplusWalletController";
-    private static final String SYSTEMUI_PACKAGE = "com.android.systemui";
-    private static final String QUICK_ACCESS_WALLET_ACTIVITY =
-            SYSTEMUI_PACKAGE + ".wallet.ui.WalletActivity";
 
-    private WalletHooks() {
+    private CameraHooks() {
     }
 
     static void install(AssistRestoreModule module, ClassLoader classLoader) {
@@ -41,14 +36,14 @@ final class WalletHooks {
             contextField.setAccessible(true);
 
             module.hook(startWallet)
-                    .setId("double_press_wallet")
+                    .setId("double_press_camera")
                     .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
                     .intercept(chain -> {
                         if (!AssistConfig.isEnabled(HookPrefs.get())
-                                || !AssistConfig.doublePressWallet(HookPrefs.get())) {
+                                || !AssistConfig.doublePressCamera(HookPrefs.get())) {
                             return chain.proceed();
                         }
-                        if (launchQuickAccessWallet(module, chain.getThisObject(), contextField)) {
+                        if (launchCamera(module, chain.getThisObject(), contextField)) {
                             return null;
                         }
                         // Never leave the gesture unanswered: fall back to the OEM wallet.
@@ -60,23 +55,39 @@ final class WalletHooks {
         }
     }
 
-    /** @return {@code true} when the quick-access wallet screen was asked to start */
-    private static boolean launchQuickAccessWallet(
+    /** @return {@code true} when the camera was asked to start */
+    private static boolean launchCamera(
             AssistRestoreModule module, Object controller, Field contextField) {
         try {
             Object value = contextField.get(controller);
             if (!(value instanceof Context)) {
-                module.logWarn("double_press_wallet_failed reason=no_context");
+                module.logWarn("double_press_camera_failed reason=no_context");
                 return false;
             }
-            Intent intent = new Intent();
-            intent.setComponent(new ComponentName(SYSTEMUI_PACKAGE, QUICK_ACCESS_WALLET_ACTIVITY));
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startForCurrentUser((Context) value, intent);
-            module.logInfo("double_press_wallet target=quick_access_wallet launched=true");
+            Context context = (Context) value;
+            KeyguardManager km = context.getSystemService(KeyguardManager.class);
+            boolean locked = km != null && km.isKeyguardLocked();
+
+            Intent intent = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            // On the lockscreen prefer the secure camera, so the gallery stays locked
+            if (locked) {
+                Intent secure = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA_SECURE)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+                if (context.getPackageManager()
+                        .resolveActivity(secure, PackageManager.MATCH_DEFAULT_ONLY) != null) {
+                    intent = secure;
+                }
+            }
+
+            startForCurrentUser(context, intent);
+            module.logInfo("double_press_camera target=" + intent.getAction()
+                    + " locked=" + locked + " launched=true");
             return true;
         } catch (Throwable t) {
-            module.logWarn("double_press_wallet_failed " + t);
+            module.logWarn("double_press_camera_failed " + t);
             return false;
         }
     }

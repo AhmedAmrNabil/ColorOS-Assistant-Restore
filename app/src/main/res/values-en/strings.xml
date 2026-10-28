@@ -80,8 +80,8 @@
     <string name="adv_spoof_google_build_desc">Spoofs device model as SM-S928B to unlock Circle to Search</string>
     <string name="adv_handle_when_bar_hidden">Keep long-press when navigation bar is hidden</string>
     <string name="adv_handle_when_bar_hidden_desc">Even with the navigation bar hidden, long-pressing where it used to be still summons the assistant</string>
-    <string name="adv_double_press_wallet">Double-press power: Google Wallet</string>
-    <string name="adv_double_press_wallet_desc">Opens the system quick-access wallet (Google Wallet tap-to-pay) instead of ColorOS Wallet. The system &quot;Double-press power button for quick services&quot; setting must stay on.</string>
+    <string name="adv_double_press_camera">Double-press power: Camera</string>
+    <string name="adv_double_press_camera_desc">Double-press power button to launch camera (secure camera when locked, default camera when unlocked). The system &quot;Double-press power button for quick services&quot; setting must stay on.</string>
     <string name="adv_hide_launcher_icon">Hide launcher icon</string>
     <string name="adv_hide_launcher_icon_desc">When hidden, the app can still be opened from the LSPosed module page or system app info</string>
 

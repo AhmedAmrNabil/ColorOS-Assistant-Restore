@@ -33,7 +33,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowDropDown
@@ -250,7 +250,7 @@ fun AssistRestoreApp() {
     var unblockPageFlags by remember { mutableStateOf(store.unblockPageFlags()) }
     var fakeGoogleBuild by remember { mutableStateOf(store.spoofGoogleBuild()) }
     var handleWhenBarHidden by remember { mutableStateOf(store.handleWhenBarHidden()) }
-    var doublePressWallet by remember { mutableStateOf(store.doublePressWallet()) }
+    var doublePressCamera by remember { mutableStateOf(store.doublePressCamera()) }
     // Not a preference: the switch reports the launcher alias' component state, which is what the
     // package manager keeps, so it also stays correct after a reinstall.
     var hideLauncherIcon by remember { mutableStateOf(LauncherIcon.isHidden(context)) }
@@ -281,7 +281,7 @@ fun AssistRestoreApp() {
                 unblockPageFlags = store.unblockPageFlags()
                 fakeGoogleBuild = store.spoofGoogleBuild()
                 handleWhenBarHidden = store.handleWhenBarHidden()
-                doublePressWallet = store.doublePressWallet()
+                doublePressCamera = store.doublePressCamera()
             }
         }
         App.addServiceStateListener(listener, true)
@@ -415,10 +415,10 @@ fun AssistRestoreApp() {
                 handleWhenBarHidden = it
                 store.setHandleWhenBarHidden(it)
             },
-            doublePressWallet = doublePressWallet,
-            onDoublePressWalletChange = {
-                doublePressWallet = it
-                store.setDoublePressWallet(it)
+            doublePressCamera = doublePressCamera,
+            onDoublePressCameraChange = {
+                doublePressCamera = it
+                store.setDoublePressCamera(it)
             },
             hideLauncherIcon = hideLauncherIcon,
             onHideLauncherIconChange = {
@@ -1242,8 +1242,8 @@ private fun AdvancedScreen(
     onFakeGoogleBuildChange: (Boolean) -> Unit,
     handleWhenBarHidden: Boolean,
     onHandleWhenBarHiddenChange: (Boolean) -> Unit,
-    doublePressWallet: Boolean,
-    onDoublePressWalletChange: (Boolean) -> Unit,
+    doublePressCamera: Boolean,
+    onDoublePressCameraChange: (Boolean) -> Unit,
     hideLauncherIcon: Boolean,
     onHideLauncherIconChange: (Boolean) -> Unit,
     selectedTab: Int,
@@ -1297,10 +1297,10 @@ private fun AdvancedScreen(
                 )
                 RowDivider()
                 ListRow(
-                    title = stringResource(R.string.adv_double_press_wallet),
-                    subtitle = stringResource(R.string.adv_double_press_wallet_desc),
-                    icon = Icons.Rounded.AccountBalanceWallet,
-                    trailing = { Toggle(doublePressWallet, onDoublePressWalletChange) },
+                    title = stringResource(R.string.adv_double_press_camera),
+                    subtitle = stringResource(R.string.adv_double_press_camera_desc),
+                    icon = Icons.Rounded.PhotoCamera,
+                    trailing = { Toggle(doublePressCamera, onDoublePressCameraChange) },
                 )
                 RowDivider()
                 ListRow(
