@@ -28,7 +28,7 @@ Each entry has its own wake target and can be turned off individually. Beyond th
 - **No useless wake-up**: holding the gesture handle no longer pre-binds the OEM screen recognition service.
 - **Holding the handle only summons the assistant**: the bar's own strip (about 480x88 px) belongs to the system navigation bar window, so the page no longer fires its own long press at the same time; this also holds with the gesture bar hidden, and the strip goes back to the keyboard while it is up.
 - **Process retention**: a frozen Google app is the usual reason a dispatch succeeds with nothing on screen, so the module exempts that app at the OEM freeze decision point.
-- **Double-press power** (optional): skips the ColorOS wallet and opens the system quick-access wallet screen instead (the wallet role, i.e. Google Wallet).
+- **Double-press power** (optional): skips the ColorOS wallet and quickly launches the camera instead (secure camera when locked, default camera when unlocked).
 
 ## Requirements
 
@@ -80,7 +80,7 @@ The app has two bottom pages; detail pages are reached from the entry page.
 | Unblock page-level gestures | On | Clears the page-level flags requested by apps so Settings and similar pages accept the corner swipe (ColorOS 17 no longer applies that block, so the option is greyed out and inactive there) |
 | Spoof Google app device model | On | Reports SM-S928B inside the Google app process to unlock Circle to Search |
 | Keep the handle press with a hidden bar | On | ColorOS stops feeding the gesture handle as soon as the bar is hidden; with this on, the long press at the same bottom position still wakes the entry's configured target. The bar itself stays hidden |
-| Double-press power uses Google Wallet | Off | Opens the system quick-access wallet screen (Google Wallet card screen) instead of the ColorOS wallet quick launch; the system "double press for quick service" switch must stay on |
+| Double-press power: Camera | Off | Double-press power button to launch camera (secure camera when locked, default camera when unlocked); automatically overrides gate checks without needing the system or Cards app shortcut enabled |
 | Hide the launcher icon | Off | Removes the home-screen icon (the launcher entry is an activity alias). The entry activity keeps a MAIN + INFO filter, so the app still opens from LSPosed and from the system app-info page |
 
 The power-key haptic feedback is always on and has no setting.
@@ -126,7 +126,7 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. Add `--offlin
 
 **1.0.8** - Additional ColorOS 17 fixes ported from community PR #3 by @zopulus: `Build` final fields are written through `jdk.internal.misc.Unsafe` (Android 17 rejects plain reflective writes and the static-field natives left `sun.misc.Unsafe`); the Google app identity spoof covers every process of that package; `ContextualSearchManagerService.isContextualSearchAvailable` answers true for trusted callers; the gesture handle bootstraps its press range when the bar was hidden at boot; an empty `voice_interaction_service` is repaired from the assistant's declared service.
 
-**1.0.7** - New option to make a power-key double press open the system quick-access wallet screen instead of the ColorOS wallet (off by default).
+**1.0.7** - New option to make a power-key double press launch the camera instead of the ColorOS wallet (secure camera when locked, default camera when unlocked), without needing the shortcut enabled in the system or Cards app (off by default).
 
 **1.0.6** - ColorOS 17 (`V17.0.0.103` / API 37) support: `AssistManager`, the launcher corner-gesture rule and the Circle to Search interface now resolve against the new signatures; "Unblock page-level gestures" is ColorOS 16 only and is greyed out on 17, where the system no longer applies that block.
 

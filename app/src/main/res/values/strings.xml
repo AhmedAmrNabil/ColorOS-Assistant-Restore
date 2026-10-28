@@ -81,7 +81,7 @@
     <string name="adv_handle_when_bar_hidden">隐藏手势条时保持长按</string>
     <string name="adv_handle_when_bar_hidden_desc">手势条隐藏后，底部原位置的长按仍能召唤助理</string>
     <string name="adv_double_press_camera">双击电源键打开相机</string>
-    <string name="adv_double_press_camera_desc">双击电源键快速启动系统相机（锁屏下打开安全相机，解锁后打开默认相机）；需保持系统「双击电源键唤起快捷服务」开启</string>
+    <string name="adv_double_press_camera_desc">双击电源键快速启动系统相机（锁屏下打开安全相机，解锁后打开默认相机）；无需在系统或卡包中开启双击快捷服务</string>
     <string name="adv_hide_launcher_icon">隐藏桌面图标</string>
     <string name="adv_hide_launcher_icon_desc">隐藏后可从 LSPosed 模块页或系统设置的应用详情打开</string>
 

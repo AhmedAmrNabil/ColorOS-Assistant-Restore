@@ -50,8 +50,36 @@ final class CameraHooks {
                         return chain.proceed();
                     });
             module.logInfo("hook_installed target=" + WALLET_CONTROLLER + ".startWallet");
+
+            Method getSwitchState = controller.getDeclaredMethod("getWalletSwitchState");
+            getSwitchState.setAccessible(true);
+            module.hook(getSwitchState)
+                    .setId("wallet_switch_state")
+                    .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                    .intercept(chain -> {
+                        if (AssistConfig.isEnabled(HookPrefs.get())
+                                && AssistConfig.doublePressCamera(HookPrefs.get())) {
+                            return 1;
+                        }
+                        return chain.proceed();
+                    });
+            module.logInfo("hook_installed target=" + WALLET_CONTROLLER + ".getWalletSwitchState");
+
+            Method isQuickLaunch = controller.getDeclaredMethod("isQuickLaunchSupport");
+            isQuickLaunch.setAccessible(true);
+            module.hook(isQuickLaunch)
+                    .setId("is_quick_launch_support")
+                    .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                    .intercept(chain -> {
+                        if (AssistConfig.isEnabled(HookPrefs.get())
+                                && AssistConfig.doublePressCamera(HookPrefs.get())) {
+                            return true;
+                        }
+                        return chain.proceed();
+                    });
+            module.logInfo("hook_installed target=" + WALLET_CONTROLLER + ".isQuickLaunchSupport");
         } catch (Throwable t) {
-            module.logError("hook_failed target=" + WALLET_CONTROLLER + ".startWallet", t);
+            module.logError("hook_failed target=" + WALLET_CONTROLLER, t);
         }
     }
 

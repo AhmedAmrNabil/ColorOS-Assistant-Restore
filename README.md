@@ -80,7 +80,7 @@
 | 解除页面级手势限制 | 开 | 放开应用请求的页面级屏蔽位，设置等页面也能用底角内滑（ColorOS 17 起系统不再提供该屏蔽，此项在 17 上灰显不可用） |
 | Google 应用机型伪装 | 开 | 在 Google 应用进程内伪装为 SM-S928B，解锁一圈即搜 |
 | 隐藏手势条时保持长按 | 开 | ColorOS 在隐藏手势条后会连手势条区域的长按一起停用；打开后底部原位置的长按照常唤醒该入口配置的目标。手势条本身的显示不变 |
-| 双击电源键改用 Google 钱包 | 关 | 双击电源键打开系统快捷钱包界面（Google 钱包刷卡），替代 ColorOS 钱包快捷刷卡；需保持系统「双击电源键唤起快捷服务」开启 |
+| 双击电源键打开相机 | 关 | 双击电源键快速启动系统相机（锁屏下打开安全相机，解锁后打开默认相机）；无需在系统或卡包中开启双击快捷服务 |
 | 隐藏桌面图标 | 关 | 关掉桌面上的图标（Launcher 入口是一个 activity-alias）。入口 Activity 仍保留 MAIN + INFO 过滤器，所以隐藏后依然能从 LSPosed 模块页或系统设置的应用详情打开本应用 |
 
 长按电源键的震动反馈固定开启，不提供开关。
@@ -126,7 +126,7 @@
 
 **1.0.8** — 吸收社区 PR #3（@zopulus）的补充修复：Android 17 上 `Build` final 字段改用 `jdk.internal.misc.Unsafe` 写入（普通反射被拒，且静态字段接口已从 `sun.misc.Unsafe` 移除）；Google 应用身份伪装覆盖该包全部进程；`ContextualSearchManagerService.isContextualSearchAvailable` 对可信调用方放行；隐藏手势条启动时补写按压范围；`voice_interaction_service` 为空时按声明补全。
 
-**1.0.7** — 新增「双击电源键改用 Google 钱包」：接管 `OplusWalletController.startWallet`，改为打开系统快捷钱包界面（默认关）。
+**1.0.7** — 新增「双击电源键打开相机」：接管 `OplusWalletController.startWallet`，改为快速启动相机（锁屏下打开安全相机，解锁后打开默认相机），并自动接管闸门判定，无需在系统或卡包中开启对应快捷服务（默认关）。
 
 **1.0.6** — ColorOS 17（`V17.0.0.103` / API 37）适配：`AssistManager`、桌面底角手势规则与一圈即搜接口按新签名解析；「解除页面级手势限制」仅在 ColorOS 16 有效，17 上灰显（系统不再提供页面级屏蔽位）。
 
