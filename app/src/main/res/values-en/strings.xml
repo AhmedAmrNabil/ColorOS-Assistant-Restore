@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Application & Module -->
+    <string name="app_name">ColorOS AssistRestore</string>
+    <string name="module_description">Restores AOSP digital assistant behavior on China-region ColorOS builds: holding the power button, holding the navigation bar, and swiping in from the bottom corners all wake the system default assistant.</string>
+
+    <!-- Entry Names -->
+    <string name="entry_power">Hold power button</string>
+    <string name="entry_handle">Hold navigation bar</string>
+    <string name="entry_corner">Bottom corner swipe</string>
+
+    <!-- Navigation & Common -->
+    <string name="action_back">Back</string>
+    <string name="tab_entries">Triggers</string>
+    <string name="tab_advanced">Advanced</string>
+
+    <!-- Entries Screen -->
+    <string name="title_entries">ColorOS AssistRestore</string>
+    <string name="section_wake_entries">Assistant triggers</string>
+    <string name="pref_master_switch">Override all triggers</string>
+    <string name="pref_master_switch_desc">When disabled, all three triggers revert to original ColorOS behavior</string>
+    <string name="status_module_active">Module active</string>
+    <string name="status_module_inactive">Module inactive</string>
+    <string name="status_scopes_attached">4 scopes attached</string>
+    <string name="status_service_disconnected">Xposed service not connected</string>
+    <string name="status_assistant_hint">Current default assistant · Tap to open settings</string>
+
+    <!-- Assist Data -->
+    <string name="assist_detail_vis">Supports assist · Voice interaction service</string>
+    <string name="assist_detail_assist">ACTION_ASSIST only</string>
+    <string name="assist_not_set">Not set</string>
+
+    <!-- Choice Descriptions -->
+    <string name="choice_desc_follow_default">Current: System default assistant · %1$s</string>
+    <string name="choice_desc_cts">Current: Circle to Search</string>
+    <string name="choice_desc_app">Current: %1$s</string>
+    <string name="choice_desc_custom">Current: Custom · %1$s</string>
+    <string name="choice_desc_oem">Current: Breeno Screen Recognition (ColorOS native)</string>
+    <string name="choice_desc_none">Current: Do not wake assistant</string>
+
+    <!-- Target Screen -->
+    <string name="title_target">Wake Target</string>
+    <string name="target_screen_subtitle">Select the wake target for this trigger</string>
+    <string name="target_follow_default">System default assistant</string>
+    <string name="target_follow_default_desc">Current system default: %1$s</string>
+    <string name="target_cts">Circle to Search</string>
+    <string name="target_cts_desc">Uses the system Circle to Search service; ignores the default assistant setting</string>
+    <string name="target_oem_screen_rec">Breeno Screen Recognition</string>
+    <string name="target_oem_screen_rec_desc">Not overridden: holding the navigation bar is still handled by ColorOS</string>
+    <string name="target_breeno_assistant">Breeno Assistant</string>
+    <string name="target_breeno_assistant_desc">Only declares an ACTION_ASSIST activity; launches the Breeno Assistant app directly</string>
+    <string name="target_other_app">Other app…</string>
+    <string name="target_other_app_desc">Enter a package name or service component manually to use that app\'s own assistant entry point</string>
+    <string name="target_footer_note">Each of the three triggers keeps its own target. With no target selected, this trigger wakes no assistant (ColorOS\'s native invocation is also suppressed).</string>
+    <string name="target_corner_reboot_note">Changes to the bottom corner swipe take effect after a reboot. Until then the launcher may keep showing the gesture animation.</string>
+
+    <!-- Custom Target Screen -->
+    <string name="title_custom_target">Custom Target</string>
+    <string name="method_auto">Auto</string>
+    <string name="method_assist">ACTION_ASSIST</string>
+    <string name="method_intent">Explicit Intent</string>
+    <string name="label_paste_intent_json">Paste Intent JSON</string>
+    <string name="desc_paste_intent_json">Paste the JSON from the app info here, then tap the button below to autofill</string>
+    <string name="btn_parse_and_fill">Parse and fill</string>
+    <string name="label_package_name">Package name</string>
+    <string name="desc_package_name_sample">e.g. com.heytap.speechassist</string>
+    <string name="label_service_component">Service component</string>
+    <string name="desc_service_method">Auto: prioritizes the assistant activity declared by the app; Explicit Intent: launches using the component and parameters below</string>
+    <string name="label_intent_params">Intent parameters</string>
+    <string name="btn_save_target">Save Target</string>
+
+    <!-- Advanced Screen -->
+    <string name="title_advanced">Advanced</string>
+    <string name="adv_skip_ocr_preload">Skip screen recognition pre-bind</string>
+    <string name="adv_skip_ocr_preload_desc">No longer wakes the Breeno screen recognition service needlessly when holding the navigation bar</string>
+    <string name="adv_unblock_page_flags">Unblock page-level gesture restrictions</string>
+    <string name="adv_unblock_page_flags_desc">Lets bottom corner swipe work on pages like Settings</string>
+    <string name="adv_unblock_page_flags_desc_unsupported">Android 17+ no longer blocks page-level gestures; this option has no effect</string>
+    <string name="adv_spoof_google_build">Google app device spoofing</string>
+    <string name="adv_spoof_google_build_desc">Spoofs device model as SM-S928B to unlock Circle to Search</string>
+    <string name="adv_handle_when_bar_hidden">Keep long-press when navigation bar is hidden</string>
+    <string name="adv_handle_when_bar_hidden_desc">Even with the navigation bar hidden, long-pressing where it used to be still summons the assistant</string>
+    <string name="adv_double_press_wallet">Double-press power: Google Wallet</string>
+    <string name="adv_double_press_wallet_desc">Opens the system quick-access wallet (Google Wallet tap-to-pay) instead of ColorOS Wallet. The system &quot;Double-press power button for quick services&quot; setting must stay on.</string>
+    <string name="adv_hide_launcher_icon">Hide launcher icon</string>
+    <string name="adv_hide_launcher_icon_desc">When hidden, the app can still be opened from the LSPosed module page or system app info</string>
+
+    <!-- Toasts & Notifications -->
+    <string name="toast_corner_reboot_hint">Saved: bottom corner swipe takes effect after a reboot. Until then the launcher may keep showing the gesture animation.</string>
+    <string name="toast_launcher_icon_hidden">Launcher icon hidden: the app can still be opened from the LSPosed module page or system app info.</string>
+    <string name="toast_launcher_icon_shown">Launcher icon restored.</string>
+    <string name="toast_no_assistant_settings">No assistant settings page found on this device</string>
+    <string name="notify_json_parse_failed">Couldn\'t recognize the JSON. Check the format.</string>
+    <string name="notify_json_parse_success">Parsed and filled. Confirm, then press &quot;Save Target&quot;</string>
+    <string name="notify_custom_target_saved">Saved: this trigger now uses a custom target</string>
+    <string name="notify_custom_target_saved_detail">Saved: %1$s · %2$s · %3$s · %4$s</string>
+</resources>

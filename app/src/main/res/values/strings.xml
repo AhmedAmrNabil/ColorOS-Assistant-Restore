@@ -1,5 +1,97 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Application & Module -->
     <string name="app_name">ColorOS 唤语</string>
     <string name="module_description">在 ColorOS 国内版上还原 AOSP 数字助理行为：长按电源键、长按手势条、屏幕底部角落内滑均唤醒系统当前设置的默认助理应用。</string>
+
+    <!-- Entry Names -->
+    <string name="entry_power">长按电源键</string>
+    <string name="entry_handle">长按手势条</string>
+    <string name="entry_corner">底角内滑</string>
+
+    <!-- Navigation & Common -->
+    <string name="action_back">返回</string>
+    <string name="tab_entries">入口</string>
+    <string name="tab_advanced">高级</string>
+
+    <!-- Entries Screen -->
+    <string name="title_entries">ColorOS 唤语</string>
+    <string name="section_wake_entries">唤醒入口</string>
+    <string name="pref_master_switch">模块接管全部入口</string>
+    <string name="pref_master_switch_desc">关闭后三个入口都回到 ColorOS 原始行为</string>
+    <string name="status_module_active">模块已生效</string>
+    <string name="status_module_inactive">模块未生效</string>
+    <string name="status_scopes_attached">4 个作用域已挂载</string>
+    <string name="status_service_disconnected">未连接 Xposed 服务</string>
+    <string name="status_assistant_hint">当前默认助理 · 点按打开设置</string>
+
+    <!-- Assist Data -->
+    <string name="assist_detail_vis">支持助理 · 语音交互服务</string>
+    <string name="assist_detail_assist">只有 ACTION_ASSIST</string>
+    <string name="assist_not_set">未设置</string>
+
+    <!-- Choice Descriptions -->
+    <string name="choice_desc_follow_default">当前：跟随系统默认助理 · %1$s</string>
+    <string name="choice_desc_cts">当前：一圈即搜</string>
+    <string name="choice_desc_app">当前：%1$s</string>
+    <string name="choice_desc_custom">当前：自定义 · %1$s</string>
+    <string name="choice_desc_oem">当前：小布识屏（ColorOS 原生）</string>
+    <string name="choice_desc_none">当前：不唤醒助理</string>
+
+    <!-- Target Screen -->
+    <string name="title_target">唤醒目标</string>
+    <string name="target_screen_subtitle">选择这个入口要唤醒谁</string>
+    <string name="target_follow_default">跟随系统默认助理</string>
+    <string name="target_follow_default_desc">当前系统默认：%1$s</string>
+    <string name="target_cts">一圈即搜</string>
+    <string name="target_cts_desc">走系统 CTS 服务，不跟随默认助理设置</string>
+    <string name="target_oem_screen_rec">小布识屏</string>
+    <string name="target_oem_screen_rec_desc">不接管：长按手势条仍由 ColorOS 自己处理</string>
+    <string name="target_breeno_assistant">小布助手</string>
+    <string name="target_breeno_assistant_desc">只有 ACTION_ASSIST 活动，直接唤起小布助手本体</string>
+    <string name="target_other_app">其他应用…</string>
+    <string name="target_other_app_desc">手动填包名或服务组件，用该应用自己的助理入口</string>
+    <string name="target_footer_note">三个入口各存一份目标；全部关掉 = 这个入口不唤醒任何助理（ColorOS 原生调用也一并关掉）。</string>
+    <string name="target_corner_reboot_note">底角这项改动要重启手机后桌面才会重新判断，重启前可能仍保留手势动画。</string>
+
+    <!-- Custom Target Screen -->
+    <string name="title_custom_target">自定义目标</string>
+    <string name="method_auto">自动</string>
+    <string name="method_assist">ACTION_ASSIST</string>
+    <string name="method_intent">显式 Intent</string>
+    <string name="label_paste_intent_json">粘贴 Intent JSON</string>
+    <string name="desc_paste_intent_json">把应用信息里那段 JSON 粘进来，点下面按钮自动填</string>
+    <string name="btn_parse_and_fill">识别并填入</string>
+    <string name="label_package_name">包名</string>
+    <string name="desc_package_name_sample">例如 com.heytap.speechassist</string>
+    <string name="label_service_component">服务组件</string>
+    <string name="desc_service_method">自动：优先该应用声明的助理活动；显式 Intent：按下面的组件与参数启动</string>
+    <string name="label_intent_params">Intent 参数</string>
+    <string name="btn_save_target">保存目标</string>
+
+    <!-- Advanced Screen -->
+    <string name="title_advanced">高级</string>
+    <string name="adv_skip_ocr_preload">跳过识屏服务预绑定</string>
+    <string name="adv_skip_ocr_preload_desc">长按手势条时不再白唤醒一次小布识屏服务</string>
+    <string name="adv_unblock_page_flags">解除页面级手势限制</string>
+    <string name="adv_unblock_page_flags_desc">设置这类页面也能用底角内滑</string>
+    <string name="adv_unblock_page_flags_desc_unsupported">Android 17 起系统不再提供页面级屏蔽，此项无效</string>
+    <string name="adv_spoof_google_build">Google 应用机型伪装</string>
+    <string name="adv_spoof_google_build_desc">伪装为 SM-S928B，解锁一圈即搜</string>
+    <string name="adv_handle_when_bar_hidden">隐藏手势条时保持长按</string>
+    <string name="adv_handle_when_bar_hidden_desc">手势条隐藏后，底部原位置的长按仍能召唤助理</string>
+    <string name="adv_double_press_wallet">双击电源键改用 Google 钱包</string>
+    <string name="adv_double_press_wallet_desc">双击电源键打开系统快捷钱包界面（Google 钱包刷卡），替代 ColorOS 钱包；需保持系统「双击电源键唤起快捷服务」开启</string>
+    <string name="adv_hide_launcher_icon">隐藏桌面图标</string>
+    <string name="adv_hide_launcher_icon_desc">隐藏后可从 LSPosed 模块页或系统设置的应用详情打开</string>
+
+    <!-- Toasts & Notifications -->
+    <string name="toast_corner_reboot_hint">已保存：底角那项要重启手机后桌面才会重新判断，之前可能仍保留手势动画</string>
+    <string name="toast_launcher_icon_hidden">已隐藏桌面图标：仍可从 LSPosed 模块页或系统设置的应用详情打开本应用</string>
+    <string name="toast_launcher_icon_shown">已重新显示桌面图标</string>
+    <string name="toast_no_assistant_settings">系统里没有可打开的助理设置页</string>
+    <string name="notify_json_parse_failed">没认出 JSON，检查一下格式</string>
+    <string name="notify_json_parse_success">已识别并填入，确认后按「保存目标」</string>
+    <string name="notify_custom_target_saved">已保存：该入口改为自定义目标</string>
+    <string name="notify_custom_target_saved_detail">已保存：%1$s · %2$s · %3$s · %4$s</string>
 </resources>
